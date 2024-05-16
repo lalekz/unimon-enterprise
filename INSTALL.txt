@@ -1,0 +1,30 @@
+Инструкция по установке ПО "Unimon Server Enterprise".
+
+1. Установка Docker
+
+Запустить bootstrap.sh, выбрать пункт меню "Install Docker", дождаться сообщения об успешной установке.
+
+2. Установка Portainer
+
+Запустить bootstrap.sh, выбрать пункт меню "Deploy Portainer", ввести необходимые данные, дождаться сообщения об успешной установке.
+
+3. Генерация настроек secrets.env
+
+Запустить bootstrap.sh, выбрать пункт меню "Generate secrets", ввести необходимые данные, проверить результат на экране.
+
+4. Генерация лицензии
+
+На машине dev.unimon.ru выполнить команду:
+$ /opt/ioncube_encoder5_cerberus_10.2/make_license --passphrase <passphrase> -o license.txt --expire-on YYYY-MM-DD --property DevLimit=N --property Org="\"ООО Рога и копыта\"" --expose-property Org --expose-property DevLimit
+
+5. Установка сертификатов и лицензии
+
+В браузере Chromium открыть интерфейс Portainer: http://localhost:9000
+Залогиниться, подключится к окружению local.
+В разделе Volumes найти том certs и нажать browse. Загрузить в том файлы mqtt_jwt.pem и license.txt
+
+6. Развертывание стека контейнеров unimon-enterprise
+
+В браузере Chromium открыть интерфейс Portainer: http://localhost:9000
+Залогиниться, подключится к окружению local.
+Открыть раздел Stacks, создать новый стек на базе шаблона unimon-enterprise и настроек secrets.env.
