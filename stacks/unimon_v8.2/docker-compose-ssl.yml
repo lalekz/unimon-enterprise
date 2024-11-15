@@ -1,0 +1,284 @@
+version: "3.5"
+services:
+  mysql-server:
+    image: docker.unimon.ru/mysql:1.8
+    container_name: mysql-server
+    command:
+      - mysqld
+      - --character-set-server=utf8
+      - --collation-server=utf8_bin
+      - --default-authentication-plugin=mysql_native_password
+      - --innodb-buffer-pool-size=500M
+    volumes:
+      - mysql-data:/var/lib/mysql
+#    ports:
+#      - 3306:3306
+    restart: unless-stopped
+    environment:
+      - MYSQL_USER=unimon
+      - MYSQL_DATABASE=unimon
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    stop_grace_period: 1m
+
+  influxdb:
+    image: docker.unimon.ru/influxdb:1.0
+    container_name: influxdb
+    volumes:
+      - influxdb-data:/var/lib/influxdb:rw
+    restart: unless-stopped
+    environment:
+      - INFLUXDB_ADMIN_USER=root
+      - INFLUXDB_USER=unimon
+      - INFLUXDB_DB=unimon
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "autoheal=true"
+
+  minio:
+    image: docker.unimon.ru/minio:1.2
+    container_name: minio
+    volumes:
+      - minio-data:/data
+      - minio-config:/root/.minio
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    labels:
+      - "autoheal=true"
+
+  rabbitmq:
+    image: "rabbitmq:3.8-management"
+    container_name: rabbitmq
+    hostname: "rabbitmq"
+    environment:
+      - RABBITMQ_DEFAULT_USER=unimon
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    restart: unless-stopped
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    logging:
+      driver: json-file
+      options:
+        max-size: "50M"
+        max-file: "10"
+
+  wkhtmltopdf:
+    image: docker.unimon.ru/wkhtmltopdf
+    container_name: wkhtmltopdf
+    environment:
+      - APP_MAX_BODY_SIZE=10000000
+      - APP_PROC_TIMEOUT=150
+      - SSL_SKIP_VERIFY=${SSL_SKIP_VERIFY}
+    restart: unless-stopped
+#    mem_limit: 500000000
+#    memswap_limit: 0
+
+  ntp:
+    image: cturra/ntp:latest
+    container_name: ntp
+    restart: unless-stopped
+    ports:
+      - 123:123/udp
+    cap_add:
+      - SYS_NICE
+      - SYS_RESOURCE
+      - SYS_TIME
+    environment:
+      - NTP_SERVERS=ru.pool.ntp.org
+
+  app-mqtt:
+    image: docker.unimon.ru/app-mqtt:3.19
+    container_name: app-mqtt
+    volumes:
+      - "certs:/etc/unimon/certs:ro"
+    ports:
+      - 1883:1883
+#      - 8883:8883
+    depends_on:
+      - mysql-server
+      - influxdb
+      - rabbitmq
+    restart: unless-stopped
+    environment:
+#      - MOSQUITTO_CA_CERTIFICATE=/etc/unimon/certs/ca.crt
+#      - MOSQUITTO_TLS_CERTIFICATE=/etc/unimon/certs/unimon.pem
+#      - MOSQUITTO_TLS_KEY=/etc/unimon/certs/unimon.key
+      - RABBITMQ_HOST=rabbitmq.unimon_net
+      - INFLUXDB_HOST=influxdb.unimon_net
+      - MYSQL_HOST=mysql-server.unimon_net
+      - MOSQUITTO_SUPERUSER=unimon
+      - JWT_PUBLIC_KEY=/etc/unimon/certs/mqtt_jwt.pem
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+      - MOSQUITTO_SUPERUSER_PASSWORD=${MOSQUITTO_SUPERUSER_PASSWORD}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:20202/busy_index"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "autoheal=true"
+
+  app-web:
+    image: docker.unimon.ru/app-web:5.15
+    container_name: app-web
+    volumes:
+      - "certs:/etc/unimon/certs:ro"
+    depends_on:
+      - mysql-server
+      - influxdb
+      - rabbitmq
+    environment:
+      - RABBITMQ_HOST=rabbitmq.unimon_net
+      - INFLUXDB_HOST=influxdb.unimon_net
+      - MYSQL_HOST=mysql-server.unimon_net
+      - MYSQL_REPLICA_HOST=mysql-server.unimon_net
+      - WKHTMLTOPDF_URL=http://wkhtmltopdf.unimon_net/
+      - PUBLIC_PROTOCOL=https
+      - PUBLIC_HOSTNAME=${PUBLIC_HOSTNAME}
+      - UM_CANCEL_INNER_SSL=${SSL_SKIP_VERIFY}
+      - API_SERVER_URL=https://${PUBLIC_HOSTNAME}/api/v1
+      - MINIO_PUBLIC_URL=https://${PUBLIC_HOSTNAME}/
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - API_SENDER_KEY=${API_SENDER_KEY}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - EMAIL_SERVER=${EMAIL_SERVER}
+      - EMAIL_SERVER_PORT=${EMAIL_SERVER_PORT}
+      - EMAIL_SERVER_FROM=${EMAIL_SERVER_FROM}
+      - EMAIL_SERVER_USER=${EMAIL_SERVER_USER}
+      - EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:20202/busy_index"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "autoheal=true"
+
+  app-sender:
+    image: docker.unimon.ru/app-sender:3.13
+    container_name: app-sender
+    volumes:
+      - "certs:/etc/unimon/certs:ro"
+    depends_on:
+      - mysql-server
+      - influxdb
+      - rabbitmq
+    environment:
+      - API_INNER_HOST=app-web.unimon_net
+      - RABBITMQ_HOST=rabbitmq.unimon_net
+      - INFLUXDB_HOST=influxdb.unimon_net
+      - MYSQL_HOST=mysql-server.unimon_net
+      - WKHTMLTOPDF_URL=http://wkhtmltopdf.unimon_net/
+      - PUBLIC_PROTOCOL=https
+      - PUBLIC_HOSTNAME=${PUBLIC_HOSTNAME}
+      - UM_CANCEL_INNER_SSL=${SSL_SKIP_VERIFY}
+      - API_SERVER_URL=https://${PUBLIC_HOSTNAME}/api/v1
+      - MINIO_PUBLIC_URL=https://${PUBLIC_HOSTNAME}/
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - API_SENDER_KEY=${API_SENDER_KEY}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - UM_FIREBASE_ACTIVATE=0
+      - EMAIL_SERVER=${EMAIL_SERVER}
+      - EMAIL_SERVER_PORT=${EMAIL_SERVER_PORT}
+      - EMAIL_SERVER_FROM=${EMAIL_SERVER_FROM}
+      - EMAIL_SERVER_USER=${EMAIL_SERVER_USER}
+      - EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:20202/busy_index"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "autoheal=true"
+
+  www:
+    image: docker.unimon.ru/www:9dadf4dc
+    container_name: www
+    depends_on:
+      - mysql-server
+    environment:
+      - UNIMON_SYSTEM_VERSION=8.2
+      - PUBLIC_PROTOCOL=https
+      - PUBLIC_HOSTNAME=${PUBLIC_HOSTNAME}
+      - API_SERVER_URL=https://${PUBLIC_HOSTNAME}/api/v1
+      - WEBSOCKET_URL=wss://${PUBLIC_HOSTNAME}/ws
+      - UM_CANCEL_INNER_SSL=${SSL_SKIP_VERIFY}
+    restart: unless-stopped
+
+  nginx-enterprise:
+    image: docker.unimon.ru/nginx-enterprise:1.2
+    container_name: nginx-enterprise
+    volumes:
+      - certs:/etc/nginx/certs:ro
+    ports:
+      - 443:443
+    restart: unless-stopped
+    environment:
+      - PUBLIC_HOSTNAME=${PUBLIC_HOSTNAME}
+      - SSL_CERTIFICATE=/etc/nginx/certs/unimon.pem
+      - SSL_CERTIFICATE_KEY=/etc/nginx/certs/unimon.key
+    depends_on:
+      - app-web
+      - www
+      - minio
+    logging:
+      driver: json-file
+      options:
+        max-size: "50M"
+        max-file: "10"
+
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - app-web
+      - app-mqtt
+      - influxdb
+      - minio
+
+volumes:
+  certs:
+    external: true
+  mysql-data:
+    name: mysql-data
+  influxdb-data:
+    name: influxdb-data
+  minio-data:
+    name: minio-data
+  minio-config:
+    name: minio-config
+  rabbitmq-data:
+    name: rabbitmq-data
+
+networks:
+  default:
+    name: unimon_net
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1450
