@@ -158,6 +158,159 @@
           "label": "Mosqutto intercomm password"
         }
       ]
+    },
+    {
+      "type": 3,
+      "title": "Unimon Monitoring System v8.2",
+      "description": "Enterprise edition",
+      "categories": ["database"],
+      "platform": "linux",
+      "logo": "https://raw.githubusercontent.com/lalekz/unimon-enterprise/master/logos/unimon.png",
+      "repository": {
+        "url": "https://github.com/lalekz/unimon-enterprise",
+        "stackfile": "stacks/unimon_v8.2/docker-compose.yml"
+      },
+      "env": [
+        {
+          "name": "PUBLIC_HOSTNAME",
+          "label": "Public hostname"
+        },
+        {
+          "name": "EMAIL_SERVER",
+          "label": "Email server"
+        },
+        {
+          "name": "EMAIL_SERVER_PORT",
+          "label": "Email server port"
+        },
+        {
+          "name": "EMAIL_SERVER_FROM",
+          "label": "Email from"
+        },
+        {
+          "name": "EMAIL_SERVER_USER",
+          "label": "Email username"
+        },
+        {
+          "name": "EMAIL_SERVER_PASSWORD",
+          "label": "Email password"
+        },
+        {
+          "name": "INFLUXDB_ADMIN_PASSWORD",
+          "label": "Influxdb admin password"
+        },
+        {
+          "name": "INFLUXDB_USER_PASSWORD",
+          "label": "Influxdb password"
+        },
+        {
+          "name": "MYSQL_ROOT_PASSWORD",
+          "label": "Mysql admin password"
+        },
+        {
+          "name": "MYSQL_PASSWORD",
+          "label": "Mysql password"
+        },
+        {
+          "name": "MINIO_ACCESS_KEY",
+          "label": "Minio access key"
+        },
+        {
+          "name": "MINIO_SECRET_KEY",
+          "label": "Minio secret key"
+        },
+        {
+          "name": "RABBITMQ_DEFAULT_PASS",
+          "label": "RabbitMQ password"
+        },
+        {
+          "name": "MOSQUITTO_SUPERUSER_PASSWORD",
+          "label": "Mosqutto intercomm password"
+        },
+        {
+          "name": "API_SENDER_KEY",
+          "label": "API key for Sender-API intercomm"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "title": "Unimon Monitoring System v8.2 (SSL)",
+      "description": "Enterprise edition",
+      "categories": ["database"],
+      "platform": "linux",
+      "logo": "https://raw.githubusercontent.com/lalekz/unimon-enterprise/master/logos/unimon.png",
+      "repository": {
+        "url": "https://github.com/lalekz/unimon-enterprise",
+        "stackfile": "stacks/unimon_v8.2/docker-compose-ssl.yml"
+      },
+      "env": [
+        {
+          "name": "PUBLIC_HOSTNAME",
+          "label": "Public hostname"
+        },
+        {
+          "name": "EMAIL_SERVER",
+          "label": "Email server"
+        },
+        {
+          "name": "EMAIL_SERVER_PORT",
+          "label": "Email server port"
+        },
+        {
+          "name": "EMAIL_SERVER_FROM",
+          "label": "Email from"
+        },
+        {
+          "name": "EMAIL_SERVER_USER",
+          "label": "Email username"
+        },
+        {
+          "name": "EMAIL_SERVER_PASSWORD",
+          "label": "Email password"
+        },
+        {
+          "name": "INFLUXDB_ADMIN_PASSWORD",
+          "label": "Influxdb admin password"
+        },
+        {
+          "name": "INFLUXDB_USER_PASSWORD",
+          "label": "Influxdb password"
+        },
+        {
+          "name": "MYSQL_ROOT_PASSWORD",
+          "label": "Mysql admin password"
+        },
+        {
+          "name": "MYSQL_PASSWORD",
+          "label": "Mysql password"
+        },
+        {
+          "name": "MINIO_ACCESS_KEY",
+          "label": "Minio access key"
+        },
+        {
+          "name": "MINIO_SECRET_KEY",
+          "label": "Minio secret key"
+        },
+        {
+          "name": "RABBITMQ_DEFAULT_PASS",
+          "label": "RabbitMQ password"
+        },
+        {
+          "name": "MOSQUITTO_SUPERUSER_PASSWORD",
+          "label": "Mosqutto intercomm password"
+        },
+        {
+          "name": "API_SENDER_KEY",
+          "label": "API key for Sender-API intercomm"
+        },
+        {
+          "name": "SSL_SKIP_VERIFY",
+          "label": "Skip server verification for inner communications",
+          "default": "0"
+        }
+      ]
     }
   ]
 }
