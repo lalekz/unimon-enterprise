@@ -7,7 +7,7 @@ if [ ! -x /bin/whiptail ]; then
 fi
 
 BACKTITLE="Unimon Enterprise Monitoring System installer"
-DOCKER_VERSION=5:25.0.5-1~ubuntu.22.04~jammy
+DOCKER_VERSION=5:28.0.0-1~ubuntu.24.04~noble
 
 function check_root()
 {
@@ -47,10 +47,10 @@ function deploy_portainer()
     docker run -d --name portainer-agent --restart=always -p 9001:9001 --network=portainer_net \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -v /var/lib/docker/volumes:/var/lib/docker/volumes \
-      portainer/agent:2.19.5
+      portainer/agent:2.20.3
     docker run --name portainer --restart=always -d -p 9000:9000 --network=portainer_net \
       -v /var/run/docker.sock:/var/run/docker.sock \
-      docker.unimon.ru/portainer:2.19.5
+      docker.unimon.ru/portainer:2.20.3
 
     docker volume create certs ||:
 
